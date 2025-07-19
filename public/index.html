@@ -571,7 +571,7 @@
                 
                 try {
                     // Use the correct endpoint based on your Django URLs
-                    const response = await fetch(`${this.apiBase}/chatbot/api-token-auth/`, {
+                    const response = await fetch(`${this.apiBase}/api/auth/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
