@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finda - AI Shopping Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .chat-container {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            height: 80vh;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo p {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .toggle-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .toggle-auth a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .toggle-auth a:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        /* Chat Interface Styles */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.bot {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .message-content {
+            background: #f5f5f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            color: #666;
+            font-style: italic;
+            padding: 10px 0;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .connection-status.online {
+            background: #4caf50;
+            color: white;
+        }
+
+        .connection-status.offline {
+            background: #f44336;
+            color: white;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .auth-container {
+                padding: 30px 20px;
+            }
+            
+            .chat-container {
+                height: 90vh;
+                border-radius: 0;
+            }
+            
+            .chat-header {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status offline">🔴 Checking connection...</div>
+
+        <!-- Authentication Container -->
+        <div id="authContainer" class="auth-container">
+            <div class="logo">
+                <h1>🛍️ Finda</h1>
+                <p>AI Shopping Assistant</p>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div id="authMessage"></div>
+
+            <!-- Login Form -->
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="button" id="loginBtn" class="btn">
+                    <span class="btn-text">Sign In</span>
+                    <span class="loading" style="display: none;"></span>
+                </button>
+                <div class="toggle-auth">
+                    Don't have an account? <a href="#" id="showRegister">Sign up</a>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerFirstName">First Name</label>
+                    <input type="text" id="registerFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerLastName">Last Name</label>
+                    <input type="text" id="registerLastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword2">Confirm Password</label>
+                    <input type="password" id="registerPassword2" required>
+                </div>
+                <button type="button" id="registerBtn" class="btn">
+                    <span class="btn-text">Sign Up</span>
+                    <span class="loading" style="display: none;"></span>
+                </button>
+                <div class="toggle-auth">
+                    Already have an account? <a href="#" id="showLogin">Sign in</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div id="chatContainer" class="chat-container">
+            <div class="chat-header">
+                <h2>🛍️ Finda Bot</h2>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+            <div id="chatMessages" class="chat-messages">
+                <div class="message bot">
+                    <div class="message-content">
+                        Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
+                    </div>
+                </div>
+            </div>
+            <div class="typing-indicator" id="typingIndicator">Finda Bot is typing...</div>
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask me anything about products and services!" maxlength="1000">
+                <button id="sendBtn" class="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class FindaApp {
+            constructor() {
+                this.apiBase = 'https://finda-backend.onrender.com';
+                this.token = localStorage.getItem('finda_token');
+                this.user = null;
+                this.isOnline = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.checkConnection();
+                this.bindEvents();
+                
+                if (this.token) {
+                    this.validateToken();
+                } else {
+                    this.showAuth();
+                }
+            }
+
+            async checkConnection() {
+                const statusEl = document.getElementById('connectionStatus');
+                try {
+                    const response = await fetch(`${this.apiBase}/categories/`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    
+                    if (response.ok || response.status === 404) {
+                        this.isOnline = true;
+                        statusEl.className = 'connection-status online';
+                        statusEl.textContent = '🟢 Connected';
+                        setTimeout(() => statusEl.style.display = 'none', 3000);
+                    } else {
+                        throw new Error('Connection failed');
+                    }
+                } catch (error) {
+                    this.isOnline = false;
+                    statusEl.className = 'connection-status offline';
+                    statusEl.textContent = '🔴 Connection Failed';
+                    console.error('Connection check failed:', error);
+                }
+            }
+
+            bindEvents() {
+                // Auth form toggles
+                document.getElementById('showRegister').onclick = () => this.toggleAuthForm(true);
+                document.getElementById('showLogin').onclick = () => this.toggleAuthForm(false);
+                
+                // Auth buttons
+                document.getElementById('loginBtn').onclick = () => this.login();
+                document.getElementById('registerBtn').onclick = () => this.register();
+                document.getElementById('logoutBtn').onclick = () => this.logout();
+                
+                // Chat functionality
+                document.getElementById('sendBtn').onclick = () => this.sendMessage();
+                document.getElementById('chatInput').onkeypress = (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                };
+
+                // Form submissions on Enter
+                document.getElementById('loginPassword').onkeypress = (e) => {
+                    if (e.key === 'Enter') this.login();
+                };
+                document.getElementById('registerPassword2').onkeypress = (e) => {
+                    if (e.key === 'Enter') this.register();
+                };
+            }
+
+            toggleAuthForm(showRegister) {
+                const loginForm = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+                
+                if (showRegister) {
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = 'block';
+                } else {
+                    registerForm.style.display = 'none';
+                    loginForm.style.display = 'block';
+                }
+                
+                this.clearMessage();
+            }
+
+            showMessage(message, type = 'error') {
+                const messageEl = document.getElementById('authMessage');
+                messageEl.innerHTML = `<div class="${type}">${message}</div>`;
+            }
+
+            clearMessage() {
+                document.getElementById('authMessage').innerHTML = '';
+            }
+
+            setLoading(btnId, loading) {
+                const btn = document.getElementById(btnId);
+                const text = btn.querySelector('.btn-text');
+                const loader = btn.querySelector('.loading');
+                
+                if (loading) {
+                    text.style.display = 'none';
+                    loader.style.display = 'inline-block';
+                    btn.disabled = true;
+                } else {
+                    text.style.display = 'inline';
+                    loader.style.display = 'none';
+                    btn.disabled = false;
+                }
+            }
+
+            async login() {
+                const email = document.getElementById('loginEmail').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                
+                if (!email || !password) {
+                    this.showMessage('Please fill in all fields');
+                    return;
+                }
+
+                this.setLoading('loginBtn', true);
+                this.clearMessage();
+                
+                try {
+                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: email, // API expects username field but we're sending email
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.token = data.token;
+                        localStorage.setItem('finda_token', this.token);
+                        await this.getCurrentUser();
+                        this.showChat();
+                        this.showMessage('Login successful!', 'success');
+                    } else {
+                        this.showMessage(data.detail || 'Login failed. Please check your credentials.');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showMessage('Network error. Please check your connection and try again.');
+                } finally {
+                    this.setLoading('loginBtn', false);
+                }
+            }
+
+            async register() {
+                const email = document.getElementById('registerEmail').value.trim();
+                const username = document.getElementById('registerUsername').value.trim();
+                const firstName = document.getElementById('registerFirstName').value.trim();
+                const lastName = document.getElementById('registerLastName').value.trim();
+                const password = document.getElementById('registerPassword').value;
+                const password2 = document.getElementById('registerPassword2').value;
+                
+                if (!email || !username || !firstName || !lastName || !password || !password2) {
+                    this.showMessage('Please fill in all fields');
+                    return;
+                }
+
+                if (password !== password2) {
+                    this.showMessage('Passwords do not match');
+                    return;
+                }
+
+                if (password.length < 8) {
+                    this.showMessage('Password must be at least 8 characters long');
+                    return;
+                }
+
+                this.setLoading('registerBtn', true);
+                this.clearMessage();
+                
+                try {
+                    const response = await fetch(`${this.apiBase}/api/auth/register/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            username: username,
+                            first_name: firstName,
+                            last_name: lastName,
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.showMessage('Registration successful! Please login.', 'success');
+                        this.toggleAuthForm(false);
+                        // Clear form
+                        document.getElementById('registerForm').querySelectorAll('input').forEach(input => input.value = '');
+                    } else {
+                        let errorMsg = 'Registration failed. ';
+                        if (data.email) errorMsg += data.email[0] + ' ';
+                        if (data.username) errorMsg += data.username[0] + ' ';
+                        if (data.password) errorMsg += data.password[0] + ' ';
+                        this.showMessage(errorMsg || data.detail);
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    this.showMessage('Network error. Please check your connection and try again.');
+                } finally {
+                    this.setLoading('registerBtn', false);
+                }
+            }
+
+            async validateToken() {
+                if (!this.token) return false;
+                
+                try {
+                    await this.getCurrentUser();
+                    this.showChat();
+                    return true;
+                } catch (error) {
+                    this.logout();
+                    return false;
+                }
+            }
+
+            async getCurrentUser() {
+                const response = await fetch(`${this.apiBase}/api/auth/user/`, {
+                    headers: {
+                        'Authorization': `Token ${this.token}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    this.user = await response.json();
+                } else {
+                    throw new Error('Invalid token');
+                }
+            }
+
+            logout() {
+                this.token = null;
+                this.user = null;
+                localStorage.removeItem('finda_token');
+                
+                // Clear chat messages except welcome
+                const messagesEl = document.getElementById('chatMessages');
+                messagesEl.innerHTML = `
+                    <div class="message bot">
+                        <div class="message-content">
+                            Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
+                        </div>
+                    </div>
+                `;
+                
+                this.showAuth();
+                
+                // Make logout API call
+                if (this.token) {
+                    fetch(`${this.apiBase}/api/auth/logout/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Token ${this.token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }).catch(e => console.log('Logout API call failed:', e));
+                }
+            }
+
+            showAuth() {
+                document.getElementById('authContainer').style.display = 'block';
+                document.getElementById('chatContainer').style.display = 'none';
+            }
+
+            showChat() {
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
+                document.getElementById('chatContainer').style.flexDirection = 'column';
+            }
+
+            async sendMessage() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                input.value = '';
+                
+                // Show typing indicator
+                this.showTyping(true);
+                
+                // Disable send button
+                document.getElementById('sendBtn').disabled = true;
+                
+                try {
+                    const response = await fetch(`${this.apiBase}/chatbot/api/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.addMessage(data.reply || 'Sorry, I could not process your request.', 'bot');
+                    } else {
+                        this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                    }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    this.addMessage('Network error. Please check your connection and try again. 🔴', 'bot');
+                } finally {
+                    this.showTyping(false);
+                    document.getElementById('sendBtn').disabled = false;
+                    input.focus();
+                }
+            }
+
+            addMessage(content, type) {
+                const messagesEl = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                // Convert URLs to clickable links and preserve line breaks
+                const formattedContent = content
+                    .replace(/\n/g, '<br>')
+                    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
+                
+                contentDiv.innerHTML = formattedContent;
+                messageDiv.appendChild(contentDiv);
+                messagesEl.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+
+            showTyping(show) {
+                const typingEl = document.getElementById('typingIndicator');
+                typingEl.style.display = show ? 'block' : 'none';
+                
+                if (show) {
+                    const messagesEl = document.getElementById('chatMessages');
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                }
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.findaApp = new FindaApp();
+        });
+
+        // Handle online/offline status
+        window.addEventListener('online', () => {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'connection-status online';
+            statusEl.textContent = '🟢 Back Online';
+            statusEl.style.display = 'block';
+            setTimeout(() => statusEl.style.display = 'none', 3000);
+        });
+
+        window.addEventListener('offline', () => {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'connection-status offline';
+            statusEl.textContent = '🔴 Offline';
+            statusEl.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
