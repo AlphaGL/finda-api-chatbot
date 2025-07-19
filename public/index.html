@@ -471,21 +471,19 @@
             async checkConnection() {
                 const statusEl = document.getElementById('connectionStatus');
                 try {
-                    const response = await fetch(`${this.apiBase}/categories/`, {
+                    // Check if the backend is reachable
+                    const response = await fetch(`${this.apiBase}/`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                     });
                     
-                    if (response.ok || response.status === 404) {
-                        this.isOnline = true;
-                        statusEl.className = 'connection-status online';
-                        statusEl.textContent = '🟢 Connected';
-                        setTimeout(() => statusEl.style.display = 'none', 3000);
-                    } else {
-                        throw new Error('Connection failed');
-                    }
+                    // Backend is reachable
+                    this.isOnline = true;
+                    statusEl.className = 'connection-status online';
+                    statusEl.textContent = '🟢 Connected';
+                    setTimeout(() => statusEl.style.display = 'none', 3000);
                 } catch (error) {
                     this.isOnline = false;
                     statusEl.className = 'connection-status offline';
@@ -572,13 +570,14 @@
                 this.clearMessage();
                 
                 try {
-                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
+                    // Use the correct endpoint based on your Django URLs
+                    const response = await fetch(`${this.apiBase}/chatbot/api-token-auth/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            email: email,
+                            username: email, // Most Django token auth expects 'username'
                             password: password
                         })
                     });
@@ -587,7 +586,9 @@
                     
                     if (response.ok) {
                         this.token = data.token;
-                        this.user = data.user || {
+                        // Since your CustomAuthToken might not return user data,
+                        // we'll store basic user info from the login form
+                        this.user = {
                             email: email,
                             first_name: '',
                             last_name: ''
@@ -596,17 +597,53 @@
                         sessionStorage.setItem('finda_token', this.token);
                         sessionStorage.setItem('finda_user', JSON.stringify(this.user));
                         
+                        // Try to fetch user profile if there's an endpoint for it
+                        await this.fetchUserProfile();
+                        
                         this.showChat();
                         this.updateUserInfo();
                         this.showMessage('Login successful!', 'success');
                     } else {
-                        this.showMessage(data.detail || data.non_field_errors?.[0] || 'Login failed. Please check your credentials.');
+                        // Handle various error formats
+                        let errorMsg = 'Login failed. Please check your credentials.';
+                        
+                        if (data.detail) {
+                            errorMsg = data.detail;
+                        } else if (data.non_field_errors && data.non_field_errors.length > 0) {
+                            errorMsg = data.non_field_errors[0];
+                        } else if (data.error) {
+                            errorMsg = data.error;
+                        }
+                        
+                        this.showMessage(errorMsg);
                     }
                 } catch (error) {
                     console.error('Login error:', error);
                     this.showMessage('Network error. Please check your connection and try again.');
                 } finally {
                     this.setLoading('loginBtn', false);
+                }
+            }
+
+            async fetchUserProfile() {
+                // Try to get user profile if your backend has a profile endpoint
+                try {
+                    const response = await fetch(`${this.apiBase}/users/profile/`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Token ${this.token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await response.json();
+                        this.user = { ...this.user, ...userData };
+                        sessionStorage.setItem('finda_user', JSON.stringify(this.user));
+                    }
+                } catch (error) {
+                    console.log('Could not fetch user profile:', error);
+                    // This is not critical, so we continue without it
                 }
             }
 
@@ -650,7 +687,9 @@
                         registrationData.phone = phone;
                     }
 
-                    const response = await fetch(`${this.apiBase}/api/auth/register/`, {
+                    // You need to create a registration endpoint in your Django backend
+                    // For now, let's assume it follows a standard pattern
+                    const response = await fetch(`${this.apiBase}/users/register/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -670,25 +709,25 @@
                         
                         // Handle specific field errors
                         if (data.email) {
-                            errorMsg += `Email: ${data.email[0]} `;
+                            errorMsg += `Email: ${Array.isArray(data.email) ? data.email[0] : data.email} `;
                         }
                         if (data.phone) {
-                            errorMsg += `Phone: ${data.phone[0]} `;
+                            errorMsg += `Phone: ${Array.isArray(data.phone) ? data.phone[0] : data.phone} `;
                         }
                         if (data.password) {
-                            errorMsg += `Password: ${data.password[0]} `;
+                            errorMsg += `Password: ${Array.isArray(data.password) ? data.password[0] : data.password} `;
                         }
                         if (data.password2) {
-                            errorMsg += `Confirm Password: ${data.password2[0]} `;
+                            errorMsg += `Confirm Password: ${Array.isArray(data.password2) ? data.password2[0] : data.password2} `;
                         }
                         if (data.first_name) {
-                            errorMsg += `First Name: ${data.first_name[0]} `;
+                            errorMsg += `First Name: ${Array.isArray(data.first_name) ? data.first_name[0] : data.first_name} `;
                         }
                         if (data.last_name) {
-                            errorMsg += `Last Name: ${data.last_name[0]} `;
+                            errorMsg += `Last Name: ${Array.isArray(data.last_name) ? data.last_name[0] : data.last_name} `;
                         }
                         if (data.non_field_errors) {
-                            errorMsg += data.non_field_errors[0];
+                            errorMsg += Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors;
                         }
                         if (data.detail) {
                             errorMsg += data.detail;
@@ -713,17 +752,6 @@
             }
 
             logout() {
-                // Make logout API call if token exists
-                if (this.token) {
-                    fetch(`${this.apiBase}/api/auth/logout/`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Token ${this.token}`,
-                            'Content-Type': 'application/json',
-                        }
-                    }).catch(e => console.log('Logout API call failed:', e));
-                }
-
                 // Clear local data
                 this.token = null;
                 this.user = null;
@@ -771,21 +799,28 @@
                 document.getElementById('sendBtn').disabled = true;
                 
                 try {
+                    // Use the correct chatbot API endpoint
                     const response = await fetch(`${this.apiBase}/chatbot/api/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            // Include token if available for authenticated requests
+                            ...(this.token && { 'Authorization': `Token ${this.token}` })
                         },
                         body: JSON.stringify({
-                            message: message
+                            message: message,
+                            user_input: message // Try both formats in case your backend expects different field names
                         })
                     });
                     
                     const data = await response.json();
                     
                     if (response.ok) {
-                        this.addMessage(data.reply || 'Sorry, I could not process your request.', 'bot');
+                        // Handle different response formats
+                        const botReply = data.reply || data.bot_response || data.response || 'Sorry, I could not process your request.';
+                        this.addMessage(botReply, 'bot');
                     } else {
+                        console.error('Chat API error:', data);
                         this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
                     }
                 } catch (error) {
@@ -853,3 +888,4 @@
     </script>
 </body>
 </html>
+        
