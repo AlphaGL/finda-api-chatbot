@@ -392,16 +392,16 @@
                     <input type="email" id="registerEmail" required>
                 </div>
                 <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                <div class="form-group">
                     <label for="registerFirstName">First Name</label>
                     <input type="text" id="registerFirstName" required>
                 </div>
                 <div class="form-group">
                     <label for="registerLastName">Last Name</label>
                     <input type="text" id="registerLastName" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerPhone">Phone (Optional)</label>
-                    <input type="tel" id="registerPhone">
                 </div>
                 <div class="form-group">
                     <label for="registerPassword">Password</label>
@@ -473,9 +473,7 @@
                 try {
                     const response = await fetch(`${this.apiBase}/categories/`, {
                         method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                     });
                     
                     if (response.ok || response.status === 404) {
@@ -495,22 +493,18 @@
             }
 
             bindEvents() {
-                // Auth form toggles
                 document.getElementById('showRegister').onclick = () => this.toggleAuthForm(true);
                 document.getElementById('showLogin').onclick = () => this.toggleAuthForm(false);
                 
-                // Auth buttons
                 document.getElementById('loginBtn').onclick = () => this.login();
                 document.getElementById('registerBtn').onclick = () => this.register();
                 document.getElementById('logoutBtn').onclick = () => this.logout();
                 
-                // Chat functionality
                 document.getElementById('sendBtn').onclick = () => this.sendMessage();
                 document.getElementById('chatInput').onkeypress = (e) => {
                     if (e.key === 'Enter') this.sendMessage();
                 };
 
-                // Form submissions on Enter
                 document.getElementById('loginPassword').onkeypress = (e) => {
                     if (e.key === 'Enter') this.login();
                 };
@@ -572,13 +566,13 @@
                 this.clearMessage();
                 
                 try {
-                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
+                    const response = await fetch(`${this.apiBase}/chatbot/api-token-auth/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            email: email,
+                            username: email, 
                             password: password
                         })
                     });
@@ -589,6 +583,7 @@
                         this.token = data.token;
                         this.user = data.user || {
                             email: email,
+                            username: email.split('@')[0],
                             first_name: '',
                             last_name: ''
                         };
@@ -612,14 +607,14 @@
 
             async register() {
                 const email = document.getElementById('registerEmail').value.trim();
+                const username = document.getElementById('registerUsername').value.trim();
                 const firstName = document.getElementById('registerFirstName').value.trim();
                 const lastName = document.getElementById('registerLastName').value.trim();
-                const phone = document.getElementById('registerPhone').value.trim();
                 const password = document.getElementById('registerPassword').value;
                 const password2 = document.getElementById('registerPassword2').value;
                 
-                if (!email || !firstName || !lastName || !password || !password2) {
-                    this.showMessage('Please fill in all required fields');
+                if (!email || !username || !firstName || !lastName || !password || !password2) {
+                    this.showMessage('Please fill in all fields');
                     return;
                 }
 
@@ -637,25 +632,19 @@
                 this.clearMessage();
                 
                 try {
-                    const registrationData = {
-                        email: email,
-                        first_name: firstName,
-                        last_name: lastName,
-                        password: password,
-                        password2: password2
-                    };
-
-                    // Only add phone if it's provided
-                    if (phone) {
-                        registrationData.phone = phone;
-                    }
-
                     const response = await fetch(`${this.apiBase}/api/auth/register/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify(registrationData)
+                        body: JSON.stringify({
+                            email: email,
+                            username: username,
+                            first_name: firstName,
+                            last_name: lastName,
+                            password: password,
+                            password2: password2
+                        })
                     });
                     
                     const data = await response.json();
@@ -663,38 +652,17 @@
                     if (response.ok) {
                         this.showMessage('Registration successful! Please login.', 'success');
                         this.toggleAuthForm(false);
-                        // Clear form
                         document.getElementById('registerForm').querySelectorAll('input').forEach(input => input.value = '');
                     } else {
-                        let errorMsg = 'Registration failed: ';
-                        
-                        // Handle specific field errors
-                        if (data.email) {
-                            errorMsg += `Email: ${data.email[0]} `;
-                        }
-                        if (data.phone) {
-                            errorMsg += `Phone: ${data.phone[0]} `;
-                        }
-                        if (data.password) {
-                            errorMsg += `Password: ${data.password[0]} `;
-                        }
-                        if (data.password2) {
-                            errorMsg += `Confirm Password: ${data.password2[0]} `;
-                        }
-                        if (data.first_name) {
-                            errorMsg += `First Name: ${data.first_name[0]} `;
-                        }
-                        if (data.last_name) {
-                            errorMsg += `Last Name: ${data.last_name[0]} `;
-                        }
-                        if (data.non_field_errors) {
-                            errorMsg += data.non_field_errors[0];
-                        }
-                        if (data.detail) {
-                            errorMsg += data.detail;
-                        }
-                        
-                        this.showMessage(errorMsg);
+                        let errorMsg = 'Registration failed. ';
+                        if (data.email) errorMsg += data.email[0] + ' ';
+                        if (data.username) errorMsg += data.username[0] + ' ';
+                        if (data.first_name) errorMsg += data.first_name[0] + ' ';
+                        if (data.last_name) errorMsg += data.last_name[0] + ' ';
+                        if (data.password) errorMsg += data.password[0] + ' ';
+                        if (data.password2) errorMsg += data.password2[0] + ' ';
+                        if (data.non_field_errors) errorMsg += data.non_field_errors[0] + ' ';
+                        this.showMessage(errorMsg || data.detail);
                     }
                 } catch (error) {
                     console.error('Registration error:', error);
@@ -707,30 +675,19 @@
             updateUserInfo() {
                 const userInfoEl = document.getElementById('userInfo');
                 if (this.user) {
-                    const displayName = this.user.first_name || this.user.email?.split('@')[0] || 'User';
+                    const displayName = this.user.first_name || this.user.username || this.user.email;
                     userInfoEl.textContent = `Welcome, ${displayName}!`;
                 }
             }
 
             logout() {
-                // Make logout API call if token exists
-                if (this.token) {
-                    fetch(`${this.apiBase}/api/auth/logout/`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Token ${this.token}`,
-                            'Content-Type': 'application/json',
-                        }
-                    }).catch(e => console.log('Logout API call failed:', e));
-                }
-
-                // Clear local data
+                // Clear token and user data
                 this.token = null;
                 this.user = null;
                 sessionStorage.removeItem('finda_token');
                 sessionStorage.removeItem('finda_user');
                 
-                // Clear chat messages except welcome
+                // Reset chat messages to welcome message
                 const messagesEl = document.getElementById('chatMessages');
                 messagesEl.innerHTML = `
                     <div class="message bot">
@@ -775,10 +732,9 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.token}`
                         },
-                        body: JSON.stringify({
-                            message: message
-                        })
+                        body: JSON.stringify({ message: message })
                     });
                     
                     const data = await response.json();
@@ -806,10 +762,7 @@
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'message-content';
                 
-                // Convert URLs to clickable links and preserve line breaks
-                const formattedContent = content
-                    .replace(/\n/g, '<br>')
-                    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
+                const formattedContent = content.replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
                 
                 contentDiv.innerHTML = formattedContent;
                 messageDiv.appendChild(contentDiv);
@@ -830,12 +783,10 @@
             }
         }
 
-        // Initialize app when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             window.findaApp = new FindaApp();
         });
 
-        // Handle online/offline status
         window.addEventListener('online', () => {
             const statusEl = document.getElementById('connectionStatus');
             statusEl.className = 'connection-status online';
