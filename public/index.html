@@ -419,29 +419,64 @@
                     throw new Error('Not authenticated');
                 }
 
-                try {
-                    const response = await fetch(`${this.baseURL}/chatbot/api/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Token ${this.token}`
-                        },
-                        body: JSON.stringify({ 
-                            message: message,
-                            question: message
-                        })
-                    });
+                // Try multiple message patterns
+                const messagePatterns = [
+                    // Pattern 1: message field
+                    { message: message },
+                    // Pattern 2: question field
+                    { question: message },
+                    // Pattern 3: both message and question
+                    { message: message, question: message },
+                    // Pattern 4: text field
+                    { text: message },
+                    // Pattern 5: query field
+                    { query: message },
+                    // Pattern 6: input field
+                    { input: message }
+                ];
 
-                    if (!response.ok) {
-                        throw new Error('Failed to send message');
+                const authHeaders = [
+                    `Token ${this.token}`,
+                    `Bearer ${this.token}`,
+                    this.token
+                ];
+
+                for (let i = 0; i < messagePatterns.length; i++) {
+                    for (let j = 0; j < authHeaders.length; j++) {
+                        try {
+                            console.log(`Trying message pattern ${i + 1} with auth header ${j + 1}:`, messagePatterns[i]);
+                            
+                            const response = await fetch(`${this.baseURL}/chatbot/api/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': authHeaders[j]
+                                },
+                                body: JSON.stringify(messagePatterns[i])
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('Chat API Response:', data);
+                                
+                                const botResponse = data.response || data.answer || data.message || 
+                                                 data.reply || data.text || data.output || data.result;
+                                
+                                if (botResponse) {
+                                    console.log(`Success with pattern ${i + 1}, auth ${j + 1}`);
+                                    return botResponse;
+                                }
+                            } else {
+                                const errorText = await response.text();
+                                console.log(`Pattern ${i + 1}, Auth ${j + 1} failed:`, response.status, errorText);
+                            }
+                        } catch (error) {
+                            console.log(`Pattern ${i + 1}, Auth ${j + 1} error:`, error.message);
+                        }
                     }
-
-                    const data = await response.json();
-                    return data.response || data.answer || data.message || 'Sorry, I couldn\'t process that.';
-                } catch (error) {
-                    console.error('Message error:', error);
-                    throw error;
                 }
+
+                return 'Sorry, I couldn\'t process that. Please check the console for debugging info.';
             }
 
             logout() {
