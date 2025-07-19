@@ -392,16 +392,20 @@
                     <input type="email" id="registerEmail" required>
                 </div>
                 <div class="form-group">
-                    <label for="registerUsername">Username</label>
-                    <input type="text" id="registerUsername" required>
-                </div>
-                <div class="form-group">
                     <label for="registerFirstName">First Name</label>
                     <input type="text" id="registerFirstName" required>
                 </div>
                 <div class="form-group">
                     <label for="registerLastName">Last Name</label>
                     <input type="text" id="registerLastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPhone">Phone (Optional)</label>
+                    <input type="tel" id="registerPhone">
+                </div>
+                <div class="form-group">
+                    <label for="registerProfile">Profile Image (Optional)</label>
+                    <input type="file" id="registerProfile" accept="image/*">
                 </div>
                 <div class="form-group">
                     <label for="registerPassword">Password</label>
@@ -473,7 +477,9 @@
                 try {
                     const response = await fetch(`${this.apiBase}/categories/`, {
                         method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
                     });
                     
                     if (response.ok || response.status === 404) {
@@ -493,22 +499,26 @@
             }
 
             bindEvents() {
+                // Auth form toggles
                 document.getElementById('showRegister').onclick = () => this.toggleAuthForm(true);
                 document.getElementById('showLogin').onclick = () => this.toggleAuthForm(false);
                 
+                // Auth buttons
                 document.getElementById('loginBtn').onclick = () => this.login();
                 document.getElementById('registerBtn').onclick = () => this.register();
                 document.getElementById('logoutBtn').onclick = () => this.logout();
                 
+                // Chat functionality
                 document.getElementById('sendBtn').onclick = () => this.sendMessage();
                 document.getElementById('chatInput').onkeypress = (e) => {
                     if (e.key === 'Enter') this.sendMessage();
                 };
 
+                // Form submissions on Enter
                 document.getElementById('loginPassword').onkeypress = (e) => {
                     if (e.key === 'Enter') this.login();
                 };
-                document.getElementById('registerPassword2').onkeypress = (e) => {
+                document.getElementById('registerPassword2').onkeypress = (e) =>  {
                     if (e.key === 'Enter') this.register();
                 };
             }
@@ -566,13 +576,13 @@
                 this.clearMessage();
                 
                 try {
-                    const response = await fetch(`${this.apiBase}/chatbot/api-token-auth/`, {
+                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            username: email, 
+                            email: email,
                             password: password
                         })
                     });
@@ -583,7 +593,6 @@
                         this.token = data.token;
                         this.user = data.user || {
                             email: email,
-                            username: email.split('@')[0],
                             first_name: '',
                             last_name: ''
                         };
@@ -607,14 +616,15 @@
 
             async register() {
                 const email = document.getElementById('registerEmail').value.trim();
-                const username = document.getElementById('registerUsername').value.trim();
                 const firstName = document.getElementById('registerFirstName').value.trim();
                 const lastName = document.getElementById('registerLastName').value.trim();
+                const phone = document.getElementById('registerPhone').value.trim();
                 const password = document.getElementById('registerPassword').value;
                 const password2 = document.getElementById('registerPassword2').value;
-                
-                if (!email || !username || !firstName || !lastName || !password || !password2) {
-                    this.showMessage('Please fill in all fields');
+                const profileFile = document.getElementById('registerProfile').files[0];
+
+                if (!email || !firstName || !lastName || !password || !password2) {
+                    this.showMessage('Please fill in all required fields');
                     return;
                 }
 
@@ -632,19 +642,23 @@
                 this.clearMessage();
                 
                 try {
+                    // Prepare form data for registration including optional fields
+                    const formData = new FormData();
+                    formData.append('email', email);
+                    formData.append('first_name', firstName);
+                    formData.append('last_name', lastName);
+                    formData.append('password', password);
+                    formData.append('password2', password2);
+                    if (phone) {
+                        formData.append('phone', phone);
+                    }
+                    if (profileFile) {
+                        formData.append('profile', profileFile);
+                    }
+
                     const response = await fetch(`${this.apiBase}/api/auth/register/`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            email: email,
-                            username: username,
-                            first_name: firstName,
-                            last_name: lastName,
-                            password: password,
-                            password2: password2
-                        })
+                        body: formData
                     });
                     
                     const data = await response.json();
@@ -652,17 +666,40 @@
                     if (response.ok) {
                         this.showMessage('Registration successful! Please login.', 'success');
                         this.toggleAuthForm(false);
+                        // Clear form
                         document.getElementById('registerForm').querySelectorAll('input').forEach(input => input.value = '');
                     } else {
-                        let errorMsg = 'Registration failed. ';
-                        if (data.email) errorMsg += data.email[0] + ' ';
-                        if (data.username) errorMsg += data.username[0] + ' ';
-                        if (data.first_name) errorMsg += data.first_name[0] + ' ';
-                        if (data.last_name) errorMsg += data.last_name[0] + ' ';
-                        if (data.password) errorMsg += data.password[0] + ' ';
-                        if (data.password2) errorMsg += data.password2[0] + ' ';
-                        if (data.non_field_errors) errorMsg += data.non_field_errors[0] + ' ';
-                        this.showMessage(errorMsg || data.detail);
+                        let errorMsg = 'Registration failed: ';
+                        
+                        if (data.email) {
+                            errorMsg += `Email: ${data.email[0]} `;
+                        }
+                        if (data.phone) {
+                            errorMsg += `Phone: ${data.phone[0]} `;
+                        }
+                        if (data.profile) {
+                            errorMsg += `Profile: ${data.profile[0]} `;
+                        }
+                        if (data.password) {
+                            errorMsg += `Password: ${data.password[0]} `;
+                        }
+                        if (data.password2) {
+                            errorMsg += `Confirm Password: ${data.password2[0]} `;
+                        }
+                        if (data.first_name) {
+                            errorMsg += `First Name: ${data.first_name[0]} `;
+                        }
+                        if (data.last_name) {
+                            errorMsg += `Last Name: ${data.last_name[0]} `;
+                        }
+                        if (data.non_field_errors) {
+                            errorMsg += data.non_field_errors[0];
+                        }
+                        if (data.detail) {
+                            errorMsg += data.detail;
+                        }
+                        
+                        this.showMessage(errorMsg);
                     }
                 } catch (error) {
                     console.error('Registration error:', error);
@@ -675,19 +712,30 @@
             updateUserInfo() {
                 const userInfoEl = document.getElementById('userInfo');
                 if (this.user) {
-                    const displayName = this.user.first_name || this.user.username || this.user.email;
+                    const displayName = this.user.first_name || this.user.email.split('@')[0] || 'User';
                     userInfoEl.textContent = `Welcome, ${displayName}!`;
                 }
             }
 
             logout() {
-                // Clear token and user data
+                // Attempt to notify backend (optional)
+                if (this.token) {
+                    fetch(`${this.apiBase}/api/auth/logout/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }).catch(e => console.log('Logout API call failed:', e));
+                }
+
+                // Clear local data
                 this.token = null;
                 this.user = null;
                 sessionStorage.removeItem('finda_token');
                 sessionStorage.removeItem('finda_user');
                 
-                // Reset chat messages to welcome message
+                // Clear chat messages except welcome
                 const messagesEl = document.getElementById('chatMessages');
                 messagesEl.innerHTML = `
                     <div class="message bot">
@@ -734,7 +782,9 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${this.token}`
                         },
-                        body: JSON.stringify({ message: message })
+                        body: JSON.stringify({
+                            message: message
+                        })
                     });
                     
                     const data = await response.json();
@@ -762,7 +812,10 @@
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'message-content';
                 
-                const formattedContent = content.replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
+                // Convert URLs to clickable links and preserve line breaks
+                const formattedContent = content
+                    .replace(/\\n/g, '<br>')
+                    .replace(/(https?:\\/\\/[^\\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
                 
                 contentDiv.innerHTML = formattedContent;
                 messageDiv.appendChild(contentDiv);
@@ -783,10 +836,12 @@
             }
         }
 
+        // Initialize app when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             window.findaApp = new FindaApp();
         });
 
+        // Handle online/offline status
         window.addEventListener('online', () => {
             const statusEl = document.getElementById('connectionStatus');
             statusEl.className = 'connection-status online';
