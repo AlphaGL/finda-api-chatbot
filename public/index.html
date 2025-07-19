@@ -360,28 +360,58 @@
             }
 
             async login(email, password) {
-                try {
-                    const response = await fetch(`${this.baseURL}/api/auth/login/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || 'Login failed');
+                // Try multiple authentication patterns
+                const authPatterns = [
+                    // Pattern 1: email/password
+                    {
+                        url: `${this.baseURL}/api/auth/login/`,
+                        body: { email, password }
+                    },
+                    // Pattern 2: username/password (email as username)
+                    {
+                        url: `${this.baseURL}/api/auth/login/`,
+                        body: { username: email, password }
+                    },
+                    // Pattern 3: DRF Token Auth
+                    {
+                        url: `${this.baseURL}/chatbot/api-token-auth/`,
+                        body: { username: email, password }
+                    },
+                    // Pattern 4: DRF Token Auth with email
+                    {
+                        url: `${this.baseURL}/chatbot/api-token-auth/`,
+                        body: { email, password }
                     }
+                ];
 
-                    const data = await response.json();
-                    this.token = data.token || data.access_token || data.key;
-                    this.isLoggedIn = true;
-                    return data;
-                } catch (error) {
-                    console.error('Login error:', error);
-                    throw error;
+                for (let i = 0; i < authPatterns.length; i++) {
+                    try {
+                        console.log(`Trying auth pattern ${i + 1}:`, authPatterns[i]);
+                        
+                        const response = await fetch(authPatterns[i].url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(authPatterns[i].body)
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.token = data.token || data.access_token || data.key;
+                            this.isLoggedIn = true;
+                            console.log('Login successful with pattern', i + 1);
+                            return data;
+                        } else {
+                            const errorText = await response.text();
+                            console.log(`Pattern ${i + 1} failed:`, response.status, errorText);
+                        }
+                    } catch (error) {
+                        console.log(`Pattern ${i + 1} error:`, error.message);
+                    }
                 }
+
+                throw new Error('All authentication patterns failed. Please check your API configuration.');
             }
 
             async sendMessage(message) {
