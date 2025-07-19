@@ -183,6 +183,11 @@
             font-size: 1.5rem;
         }
 
+        .user-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
         .logout-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
@@ -419,7 +424,10 @@
         <!-- Chat Container -->
         <div id="chatContainer" class="chat-container">
             <div class="chat-header">
-                <h2>🛍️ Finda Bot</h2>
+                <div>
+                    <h2>🛍️ Finda Bot</h2>
+                    <div class="user-info" id="userInfo"></div>
+                </div>
                 <button id="logoutBtn" class="logout-btn">Logout</button>
             </div>
             <div id="chatMessages" class="chat-messages">
@@ -441,8 +449,8 @@
         class FindaApp {
             constructor() {
                 this.apiBase = 'https://finda-backend.onrender.com';
-                this.token = localStorage.getItem('finda_token');
-                this.user = null;
+                this.token = sessionStorage.getItem('finda_token'); // Changed to sessionStorage
+                this.user = JSON.parse(sessionStorage.getItem('finda_user') || 'null');
                 this.isOnline = false;
                 
                 this.init();
@@ -452,8 +460,9 @@
                 this.checkConnection();
                 this.bindEvents();
                 
-                if (this.token) {
-                    this.validateToken();
+                if (this.token && this.user) {
+                    this.showChat();
+                    this.updateUserInfo();
                 } else {
                     this.showAuth();
                 }
@@ -578,12 +587,24 @@
                     
                     if (response.ok) {
                         this.token = data.token;
-                        localStorage.setItem('finda_token', this.token);
-                        await this.getCurrentUser();
+                        
+                        // Store user info from login response if available
+                        this.user = data.user || {
+                            email: email,
+                            username: email.split('@')[0],
+                            first_name: '',
+                            last_name: ''
+                        };
+                        
+                        // Store in sessionStorage
+                        sessionStorage.setItem('finda_token', this.token);
+                        sessionStorage.setItem('finda_user', JSON.stringify(this.user));
+                        
                         this.showChat();
+                        this.updateUserInfo();
                         this.showMessage('Login successful!', 'success');
                     } else {
-                        this.showMessage(data.detail || 'Login failed. Please check your credentials.');
+                        this.showMessage(data.detail || data.non_field_errors?.[0] || 'Login failed. Please check your credentials.');
                     }
                 } catch (error) {
                     console.error('Login error:', error);
@@ -646,6 +667,7 @@
                         if (data.email) errorMsg += data.email[0] + ' ';
                         if (data.username) errorMsg += data.username[0] + ' ';
                         if (data.password) errorMsg += data.password[0] + ' ';
+                        if (data.non_field_errors) errorMsg += data.non_field_errors[0] + ' ';
                         this.showMessage(errorMsg || data.detail);
                     }
                 } catch (error) {
@@ -656,38 +678,31 @@
                 }
             }
 
-            async validateToken() {
-                if (!this.token) return false;
-                
-                try {
-                    await this.getCurrentUser();
-                    this.showChat();
-                    return true;
-                } catch (error) {
-                    this.logout();
-                    return false;
-                }
-            }
-
-            async getCurrentUser() {
-                const response = await fetch(`${this.apiBase}/api/auth/user/`, {
-                    headers: {
-                        'Authorization': `Token ${this.token}`,
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                if (response.ok) {
-                    this.user = await response.json();
-                } else {
-                    throw new Error('Invalid token');
+            updateUserInfo() {
+                const userInfoEl = document.getElementById('userInfo');
+                if (this.user) {
+                    const displayName = this.user.first_name || this.user.username || this.user.email;
+                    userInfoEl.textContent = `Welcome, ${displayName}!`;
                 }
             }
 
             logout() {
+                // Make logout API call if token exists
+                if (this.token) {
+                    fetch(`${this.apiBase}/users/logout/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Token ${this.token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }).catch(e => console.log('Logout API call failed:', e));
+                }
+
+                // Clear local data
                 this.token = null;
                 this.user = null;
-                localStorage.removeItem('finda_token');
+                sessionStorage.removeItem('finda_token');
+                sessionStorage.removeItem('finda_user');
                 
                 // Clear chat messages except welcome
                 const messagesEl = document.getElementById('chatMessages');
@@ -700,17 +715,6 @@
                 `;
                 
                 this.showAuth();
-                
-                // Make logout API call
-                if (this.token) {
-                    fetch(`${this.apiBase}/api/auth/logout/`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Token ${this.token}`,
-                            'Content-Type': 'application/json',
-                        }
-                    }).catch(e => console.log('Logout API call failed:', e));
-                }
             }
 
             showAuth() {
