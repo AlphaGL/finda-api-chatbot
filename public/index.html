@@ -404,10 +404,6 @@
                     <input type="tel" id="registerPhone">
                 </div>
                 <div class="form-group">
-                    <label for="registerProfile">Profile Image (Optional)</label>
-                    <input type="file" id="registerProfile" accept="image/*">
-                </div>
-                <div class="form-group">
                     <label for="registerPassword">Password</label>
                     <input type="password" id="registerPassword" required>
                 </div>
@@ -518,7 +514,7 @@
                 document.getElementById('loginPassword').onkeypress = (e) => {
                     if (e.key === 'Enter') this.login();
                 };
-                document.getElementById('registerPassword2').onkeypress = (e) =>  {
+                document.getElementById('registerPassword2').onkeypress = (e) => {
                     if (e.key === 'Enter') this.register();
                 };
             }
@@ -621,8 +617,7 @@
                 const phone = document.getElementById('registerPhone').value.trim();
                 const password = document.getElementById('registerPassword').value;
                 const password2 = document.getElementById('registerPassword2').value;
-                const profileFile = document.getElementById('registerProfile').files[0];
-
+                
                 if (!email || !firstName || !lastName || !password || !password2) {
                     this.showMessage('Please fill in all required fields');
                     return;
@@ -642,23 +637,25 @@
                 this.clearMessage();
                 
                 try {
-                    // Prepare form data for registration including optional fields
-                    const formData = new FormData();
-                    formData.append('email', email);
-                    formData.append('first_name', firstName);
-                    formData.append('last_name', lastName);
-                    formData.append('password', password);
-                    formData.append('password2', password2);
+                    const registrationData = {
+                        email: email,
+                        first_name: firstName,
+                        last_name: lastName,
+                        password: password,
+                        password2: password2
+                    };
+
+                    // Only add phone if it's provided
                     if (phone) {
-                        formData.append('phone', phone);
-                    }
-                    if (profileFile) {
-                        formData.append('profile', profileFile);
+                        registrationData.phone = phone;
                     }
 
                     const response = await fetch(`${this.apiBase}/api/auth/register/`, {
                         method: 'POST',
-                        body: formData
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(registrationData)
                     });
                     
                     const data = await response.json();
@@ -671,14 +668,12 @@
                     } else {
                         let errorMsg = 'Registration failed: ';
                         
+                        // Handle specific field errors
                         if (data.email) {
                             errorMsg += `Email: ${data.email[0]} `;
                         }
                         if (data.phone) {
                             errorMsg += `Phone: ${data.phone[0]} `;
-                        }
-                        if (data.profile) {
-                            errorMsg += `Profile: ${data.profile[0]} `;
                         }
                         if (data.password) {
                             errorMsg += `Password: ${data.password[0]} `;
@@ -712,18 +707,18 @@
             updateUserInfo() {
                 const userInfoEl = document.getElementById('userInfo');
                 if (this.user) {
-                    const displayName = this.user.first_name || this.user.email.split('@')[0] || 'User';
+                    const displayName = this.user.first_name || this.user.email?.split('@')[0] || 'User';
                     userInfoEl.textContent = `Welcome, ${displayName}!`;
                 }
             }
 
             logout() {
-                // Attempt to notify backend (optional)
+                // Make logout API call if token exists
                 if (this.token) {
                     fetch(`${this.apiBase}/api/auth/logout/`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${this.token}`,
+                            'Authorization': `Token ${this.token}`,
                             'Content-Type': 'application/json',
                         }
                     }).catch(e => console.log('Logout API call failed:', e));
@@ -780,7 +775,6 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${this.token}`
                         },
                         body: JSON.stringify({
                             message: message
@@ -814,8 +808,8 @@
                 
                 // Convert URLs to clickable links and preserve line breaks
                 const formattedContent = content
-                    .replace(/\\n/g, '<br>')
-                    .replace(/(https?:\\/\\/[^\\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
+                    .replace(/\n/g, '<br>')
+                    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
                 
                 contentDiv.innerHTML = formattedContent;
                 messageDiv.appendChild(contentDiv);
