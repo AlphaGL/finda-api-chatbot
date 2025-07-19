@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finda - AI Shopping Assistant</title>
+    <title>Finda AI Chatbot</title>
     <style>
         * {
             margin: 0;
@@ -14,225 +14,151 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
         }
 
         .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 90%;
+            max-width: 800px;
+            height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             padding: 20px;
-        }
-
-        .auth-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: 0 auto;
-            animation: slideUp 0.6s ease-out;
-        }
-
-        .chat-container {
-            display: none;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            height: 80vh;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            animation: slideUp 0.6s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .logo {
             text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .login-form {
+            padding: 40px;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-form h2 {
             margin-bottom: 30px;
-        }
-
-        .logo h1 {
-            color: #667eea;
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .logo p {
-            color: #666;
-            margin-top: 5px;
-            font-size: 0.9rem;
+            color: #333;
         }
 
         .form-group {
             margin-bottom: 20px;
+            text-align: left;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
+            margin-bottom: 5px;
+            color: #555;
             font-weight: 500;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 16px;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s;
         }
 
         .form-group input:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .btn {
-            width: 100%;
-            padding: 14px;
+        .login-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 10px;
+            padding: 12px 30px;
+            border-radius: 8px;
             font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.3s;
         }
 
-        .btn:hover {
+        .login-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .login-btn:disabled {
+            opacity: 0.6;
             transform: none;
-            box-shadow: none;
+            cursor: not-allowed;
         }
 
-        .toggle-auth {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-        }
-
-        .toggle-auth a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .toggle-auth a:hover {
-            text-decoration: underline;
-        }
-
-        .error {
-            background: #ffebee;
-            border: 1px solid #f44336;
-            color: #c62828;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
-        .success {
-            background: #e8f5e8;
-            border: 1px solid #4caf50;
-            color: #2e7d32;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
-        /* Chat Interface Styles */
-        .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 20px 20px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-header h2 {
-            font-size: 1.5rem;
-        }
-
-        .user-info {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .chat-container {
+            flex: 1;
+            display: none;
+            flex-direction: column;
         }
 
         .chat-messages {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            max-height: 500px;
+            background: #f8f9fa;
         }
 
         .message {
-            margin-bottom: 20px;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            margin-bottom: 15px;
+            display: flex;
         }
 
         .message.user {
-            text-align: right;
+            justify-content: flex-end;
         }
 
         .message.bot {
-            text-align: left;
+            justify-content: flex-start;
         }
 
         .message-content {
-            display: inline-block;
-            max-width: 80%;
-            padding: 12px 16px;
+            max-width: 70%;
+            padding: 12px 18px;
             border-radius: 18px;
+            font-size: 14px;
             line-height: 1.4;
         }
 
@@ -243,585 +169,391 @@
         }
 
         .message.bot .message-content {
-            background: #f5f5f5;
+            background: white;
             color: #333;
+            border: 1px solid #e0e0e0;
             border-bottom-left-radius: 4px;
         }
 
-        .chat-input-container {
+        .chat-input {
             padding: 20px;
-            border-top: 1px solid #e1e5e9;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .input-group {
             display: flex;
             gap: 10px;
         }
 
-        .chat-input {
+        .input-group input {
             flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e1e5e9;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
             border-radius: 25px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.3s ease;
         }
 
-        .chat-input:focus {
+        .input-group input:focus {
             border-color: #667eea;
         }
 
         .send-btn {
-            padding: 12px 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
             cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
         }
 
         .send-btn:hover {
-            transform: scale(1.05);
+            transform: scale(1.1);
         }
 
         .send-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+            opacity: 0.6;
             transform: none;
         }
 
         .typing-indicator {
             display: none;
-            color: #666;
-            font-style: italic;
-            padding: 10px 0;
+            padding: 10px 18px;
+            background: white;
+            border-radius: 18px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 15px;
+            max-width: 70%;
         }
 
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
+        .typing-dots {
+            display: flex;
+            gap: 3px;
         }
 
-        .connection-status.online {
-            background: #4caf50;
-            color: white;
-        }
-
-        .connection-status.offline {
-            background: #f44336;
-            color: white;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #999;
             border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+            animation: typing 1.4s infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
         }
 
-        @media (max-width: 768px) {
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 600px) {
             .container {
-                padding: 10px;
+                width: 95%;
+                height: 95vh;
             }
-            
-            .auth-container {
-                padding: 30px 20px;
-            }
-            
-            .chat-container {
-                height: 90vh;
-                border-radius: 0;
-            }
-            
-            .chat-header {
-                border-radius: 0;
+
+            .message-content {
+                max-width: 85%;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Connection Status -->
-        <div id="connectionStatus" class="connection-status offline">🔴 Checking connection...</div>
-
-        <!-- Authentication Container -->
-        <div id="authContainer" class="auth-container">
-            <div class="logo">
-                <h1>🛍️ Finda</h1>
-                <p>AI Shopping Assistant</p>
-            </div>
-
-            <!-- Error/Success Messages -->
-            <div id="authMessage"></div>
-
-            <!-- Login Form -->
-            <div id="loginForm">
-                <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" required>
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" required>
-                </div>
-                <button type="button" id="loginBtn" class="btn">
-                    <span class="btn-text">Sign In</span>
-                    <span class="loading" style="display: none;"></span>
-                </button>
-                <div class="toggle-auth">
-                    Don't have an account? <a href="#" id="showRegister">Sign up</a>
-                </div>
-            </div>
-
-            <!-- Register Form -->
-            <div id="registerForm" style="display: none;">
-                <div class="form-group">
-                    <label for="registerEmail">Email</label>
-                    <input type="email" id="registerEmail" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerFirstName">First Name</label>
-                    <input type="text" id="registerFirstName" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerLastName">Last Name</label>
-                    <input type="text" id="registerLastName" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerPhone">Phone (Optional)</label>
-                    <input type="tel" id="registerPhone">
-                </div>
-                <div class="form-group">
-                    <label for="registerPassword">Password</label>
-                    <input type="password" id="registerPassword" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerPassword2">Confirm Password</label>
-                    <input type="password" id="registerPassword2" required>
-                </div>
-                <button type="button" id="registerBtn" class="btn">
-                    <span class="btn-text">Sign Up</span>
-                    <span class="loading" style="display: none;"></span>
-                </button>
-                <div class="toggle-auth">
-                    Already have an account? <a href="#" id="showLogin">Sign in</a>
-                </div>
-            </div>
+        <div class="header">
+            <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
+            <div class="status-indicator"></div>
+            <h1>Finda AI Chatbot</h1>
+            <p>Your intelligent assistant is ready to help</p>
         </div>
 
-        <!-- Chat Container -->
-        <div id="chatContainer" class="chat-container">
-            <div class="chat-header">
-                <div>
-                    <h2>🛍️ Finda Bot</h2>
-                    <div class="user-info" id="userInfo"></div>
-                </div>
-                <button id="logoutBtn" class="logout-btn">Logout</button>
+        <!-- Login Form -->
+        <div class="login-form" id="loginForm">
+            <h2>Welcome Back</h2>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" value="ichukwugozirim@gmail.com" required>
             </div>
-            <div id="chatMessages" class="chat-messages">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" value="Ibeawuchi@242" required>
+            </div>
+            <button class="login-btn" id="loginBtn">Sign In</button>
+            <div class="error-message" id="loginError"></div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-messages" id="chatMessages">
                 <div class="message bot">
                     <div class="message-content">
-                        Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
+                        Hello! I'm your Finda AI assistant. How can I help you today?
                     </div>
                 </div>
             </div>
-            <div class="typing-indicator" id="typingIndicator">Finda Bot is typing...</div>
-            <div class="chat-input-container">
-                <input type="text" id="chatInput" class="chat-input" placeholder="Ask me anything about products and services!" maxlength="1000">
-                <button id="sendBtn" class="send-btn">Send</button>
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <div class="chat-input">
+                <div class="input-group">
+                    <input type="text" id="messageInput" placeholder="Type your message here..." maxlength="500">
+                    <button class="send-btn" id="sendBtn">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Helper to read cookies
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-        }
-
-        class FindaApp {
+        class ChatbotAPI {
             constructor() {
-                this.apiBase = 'https://finda-backend.onrender.com';
-                this.token = sessionStorage.getItem('finda_token');
-                this.user = JSON.parse(sessionStorage.getItem('finda_user') || 'null');
-                this.isOnline = false;
-                this.init();  // no change here
+                this.baseURL = 'https://finda-backend.onrender.com';
+                this.token = null;
+                this.isLoggedIn = false;
             }
 
-            // Make init async so we can await CSRF fetch
-            async init() {
-                await this.checkConnection();
-                // Ensure CSRF cookie is set
-                await this.fetchCSRF();
-                this.bindEvents();
-
-                if (this.token && this.user) {
-                    this.showChat();
-                    this.updateUserInfo();
-                } else {
-                    this.showAuth();
-                }
-            }
-
-            // GET /api/csrf/ to set the csrftoken cookie
-            async fetchCSRF() {
+            async login(email, password) {
                 try {
-                    await fetch(`${this.apiBase}/api/csrf/`, {
-                        method: 'GET',
-                        credentials: 'include'
-                    });
-                } catch (e) {
-                    console.warn('Could not fetch CSRF token', e);
-                }
-            }
-
-            async checkConnection() {
-                const statusEl = document.getElementById('connectionStatus');
-                try {
-                    const response = await fetch(`${this.apiBase}/`, {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include'
-                    });
-                    this.isOnline = true;
-                    statusEl.className = 'connection-status online';
-                    statusEl.textContent = '🟢 Connected';
-                    setTimeout(() => statusEl.style.display = 'none', 3000);
-                } catch (error) {
-                    this.isOnline = false;
-                    statusEl.className = 'connection-status offline';
-                    statusEl.textContent = '🔴 Connection Failed';
-                    console.error('Connection check failed:', error);
-                }
-            }
-
-            bindEvents() {
-                document.getElementById('showRegister').onclick = () => this.toggleAuthForm(true);
-                document.getElementById('showLogin').onclick = () => this.toggleAuthForm(false);
-                document.getElementById('loginBtn').onclick = () => this.login();
-                document.getElementById('registerBtn').onclick = () => this.register();
-                document.getElementById('logoutBtn').onclick = () => this.logout();
-                document.getElementById('sendBtn').onclick = () => this.sendMessage();
-                document.getElementById('chatInput').onkeypress = (e) => {
-                    if (e.key === 'Enter') this.sendMessage();
-                };
-                document.getElementById('loginPassword').onkeypress = (e) => {
-                    if (e.key === 'Enter') this.login();
-                };
-                document.getElementById('registerPassword2').onkeypress = (e) => {
-                    if (e.key === 'Enter') this.register();
-                };
-            }
-
-            toggleAuthForm(showRegister) {
-                const loginForm    = document.getElementById('loginForm');
-                const registerForm = document.getElementById('registerForm');
-                if (showRegister) {
-                    loginForm.style.display    = 'none';
-                    registerForm.style.display = 'block';
-                } else {
-                    registerForm.style.display = 'none';
-                    loginForm.style.display    = 'block';
-                }
-                this.clearMessage();
-            }
-
-            showMessage(message, type = 'error') {
-                document.getElementById('authMessage').innerHTML =
-                    `<div class="${type}">${message}</div>`;
-            }
-
-            clearMessage() {
-                document.getElementById('authMessage').innerHTML = '';
-            }
-
-            setLoading(btnId, loading) {
-                const btn    = document.getElementById(btnId);
-                const text   = btn.querySelector('.btn-text');
-                const loader = btn.querySelector('.loading');
-                if (loading) {
-                    text.style.display   = 'none';
-                    loader.style.display = 'inline-block';
-                    btn.disabled         = true;
-                } else {
-                    text.style.display   = 'inline';
-                    loader.style.display = 'none';
-                    btn.disabled         = false;
-                }
-            }
-
-            async login() {
-                const email    = document.getElementById('loginEmail').value.trim();
-                const password = document.getElementById('loginPassword').value;
-                if (!email || !password) {
-                    this.showMessage('Please fill in all fields');
-                    return;
-                }
-
-                this.setLoading('loginBtn', true);
-                this.clearMessage();
-
-                try {
-                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
+                    const response = await fetch(`${this.baseURL}/api/auth/login/`, {
                         method: 'POST',
-                        credentials: 'include',              // ← include cookies
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken')  // ← send CSRF token
                         },
-                        body: JSON.stringify({
-                            username: email,
-                            password: password
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Login failed');
+                    }
+
+                    const data = await response.json();
+                    this.token = data.token || data.access_token || data.key;
+                    this.isLoggedIn = true;
+                    return data;
+                } catch (error) {
+                    console.error('Login error:', error);
+                    throw error;
+                }
+            }
+
+            async sendMessage(message) {
+                if (!this.isLoggedIn || !this.token) {
+                    throw new Error('Not authenticated');
+                }
+
+                try {
+                    const response = await fetch(`${this.baseURL}/chatbot/api/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Token ${this.token}`
+                        },
+                        body: JSON.stringify({ 
+                            message: message,
+                            question: message
                         })
                     });
 
+                    if (!response.ok) {
+                        throw new Error('Failed to send message');
+                    }
+
                     const data = await response.json();
-                    if (response.ok) {
-                        this.token = data.token;
-                        this.user  = { email, first_name: '', last_name: '' };
-                        sessionStorage.setItem('finda_token', this.token);
-                        sessionStorage.setItem('finda_user', JSON.stringify(this.user));
-                        await this.fetchUserProfile();
-                        this.showChat();
-                        this.updateUserInfo();
-                        this.showMessage('Login successful!', 'success');
-                    } else {
-                        let errorMsg = 'Login failed. Please check your credentials.';
-                        if (data.detail)                 errorMsg = data.detail;
-                        else if (data.non_field_errors)  errorMsg = data.non_field_errors[0];
-                        else if (data.error)             errorMsg = data.error;
-                        this.showMessage(errorMsg);
-                    }
+                    return data.response || data.answer || data.message || 'Sorry, I couldn\'t process that.';
                 } catch (error) {
-                    console.error('Login error:', error);
-                    this.showMessage('Network error. Please check your connection and try again.');
-                } finally {
-                    this.setLoading('loginBtn', false);
-                }
-            }
-
-            async fetchUserProfile() {
-                try {
-                    const response = await fetch(`${this.apiBase}/api/auth/profile/`, {
-                        method: 'GET',
-                        credentials: 'include',
-                        headers: {
-                            'Authorization': `Token ${this.token}`,
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    if (response.ok) {
-                        const userData = await response.json();
-                        this.user = { ...this.user, ...userData };
-                        sessionStorage.setItem('finda_user', JSON.stringify(this.user));
-                    }
-                } catch (error) {
-                    console.log('Could not fetch user profile:', error);
-                }
-            }
-
-            async register() {
-                const email      = document.getElementById('registerEmail').value.trim();
-                const firstName  = document.getElementById('registerFirstName').value.trim();
-                const lastName   = document.getElementById('registerLastName').value.trim();
-                const phone      = document.getElementById('registerPhone').value.trim();
-                const password   = document.getElementById('registerPassword').value;
-                const password2  = document.getElementById('registerPassword2').value;
-
-                if (!email || !firstName || !lastName || !password || !password2) {
-                    this.showMessage('Please fill in all required fields');
-                    return;
-                }
-                if (password !== password2) {
-                    this.showMessage('Passwords do not match');
-                    return;
-                }
-                if (password.length < 8) {
-                    this.showMessage('Password must be at least 8 characters long');
-                    return;
-                }
-
-                this.setLoading('registerBtn', true);
-                this.clearMessage();
-
-                try {
-                    const registrationData = {
-                        email,
-                        first_name: firstName,
-                        last_name: lastName,
-                        password,
-                        password2
-                    };
-                    if (phone) registrationData.phone = phone;
-
-                    const response = await fetch(`${this.apiBase}/api/auth/register/`, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken')
-                        },
-                        body: JSON.stringify(registrationData)
-                    });
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        this.showMessage('Registration successful! Please login.', 'success');
-                        this.toggleAuthForm(false);
-                        document.getElementById('registerForm')
-                                .querySelectorAll('input').forEach(i => i.value = '');
-                    } else {
-                        let errorMsg = 'Registration failed: ';
-                        if (data.email)           errorMsg += `Email: ${data.email[0] || data.email} `;
-                        if (data.phone)           errorMsg += `Phone: ${data.phone[0] || data.phone} `;
-                        if (data.password)        errorMsg += `Password: ${data.password[0] || data.password} `;
-                        if (data.password2)       errorMsg += `Confirm Password: ${data.password2[0] || data.password2} `;
-                        if (data.first_name)      errorMsg += `First Name: ${data.first_name[0] || data.first_name} `;
-                        if (data.last_name)       errorMsg += `Last Name: ${data.last_name[0] || data.last_name} `;
-                        if (data.non_field_errors)errorMsg += data.non_field_errors[0];
-                        if (data.detail)          errorMsg += data.detail;
-                        this.showMessage(errorMsg);
-                    }
-                } catch (error) {
-                    console.error('Registration error:', error);
-                    this.showMessage('Network error. Please check your connection and try again.');
-                } finally {
-                    this.setLoading('registerBtn', false);
-                }
-            }
-
-            updateUserInfo() {
-                const userInfoEl = document.getElementById('userInfo');
-                if (this.user) {
-                    const displayName = this.user.first_name
-                        || this.user.email.split('@')[0]
-                        || 'User';
-                    userInfoEl.textContent = `Welcome, ${displayName}!`;
+                    console.error('Message error:', error);
+                    throw error;
                 }
             }
 
             logout() {
                 this.token = null;
-                this.user  = null;
-                sessionStorage.removeItem('finda_token');
-                sessionStorage.removeItem('finda_user');
-                document.getElementById('chatMessages').innerHTML = `
-                    <div class="message bot">
-                        <div class="message-content">
-                            Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
-                        </div>
-                    </div>`;
-                this.showAuth();
-            }
-
-            showAuth() {
-                document.getElementById('authContainer').style.display = 'block';
-                document.getElementById('chatContainer').style.display = 'none';
-            }
-
-            showChat() {
-                document.getElementById('authContainer').style.display = 'none';
-                const chatC = document.getElementById('chatContainer');
-                chatC.style.display = 'flex';
-                chatC.style.flexDirection = 'column';
-            }
-
-            async sendMessage() {
-                const input   = document.getElementById('chatInput');
-                const message = input.value.trim();
-                if (!message) return;
-
-                this.addMessage(message, 'user');
-                input.value = '';
-                this.showTyping(true);
-                document.getElementById('sendBtn').disabled = true;
-
-                try {
-                    const response = await fetch(`${this.apiBase}/chatbot/api/`, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': this.token ? `Token ${this.token}` : ''
-                        },
-                        body: JSON.stringify({
-                            message: message,
-                            user_input: message
-                        })
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        const botReply = data.reply || data.bot_response || data.response || 'Sorry, I could not process your request.';
-                        this.addMessage(botReply, 'bot');
-                    } else {
-                        console.error('Chat API error:', data);
-                        this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
-                    }
-                } catch (error) {
-                    console.error('Chat error:', error);
-                    this.addMessage('Network error. Please check your connection and try again. 🔴', 'bot');
-                } finally {
-                    this.showTyping(false);
-                    document.getElementById('sendBtn').disabled = false;
-                    input.focus();
-                }
-            }
-
-            addMessage(content, type) {
-                const messagesEl = document.getElementById('chatMessages');
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${type}`;
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'message-content';
-                const formatted = content
-                    .replace(/\n/g, '<br>')
-                    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
-                contentDiv.innerHTML = formatted;
-                messageDiv.appendChild(contentDiv);
-                messagesEl.appendChild(messageDiv);
-                messagesEl.scrollTop = messagesEl.scrollHeight;
-            }
-
-            showTyping(show) {
-                const el = document.getElementById('typingIndicator');
-                el.style.display = show ? 'block' : 'none';
-                if (show) {
-                    const m = document.getElementById('chatMessages');
-                    m.scrollTop = m.scrollHeight;
-                }
+                this.isLoggedIn = false;
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            window.findaApp = new FindaApp();
-        });
+        class ChatbotUI {
+            constructor() {
+                this.api = new ChatbotAPI();
+                this.initializeElements();
+                this.attachEventListeners();
+            }
 
-        window.addEventListener('online', () => {
-            const statusEl = document.getElementById('connectionStatus');
-            statusEl.className = 'connection-status online';
-            statusEl.textContent = '🟢 Back Online';
-            statusEl.style.display = 'block';
-            setTimeout(() => statusEl.style.display = 'none', 3000);
-        });
-        window.addEventListener('offline', () => {
-            const statusEl = document.getElementById('connectionStatus');
-            statusEl.className = 'connection-status offline';
-            statusEl.textContent = '🔴 Offline';
-            statusEl.style.display = 'block';
+            initializeElements() {
+                this.loginForm = document.getElementById('loginForm');
+                this.chatContainer = document.getElementById('chatContainer');
+                this.emailInput = document.getElementById('email');
+                this.passwordInput = document.getElementById('password');
+                this.loginBtn = document.getElementById('loginBtn');
+                this.logoutBtn = document.getElementById('logoutBtn');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.chatMessages = document.getElementById('chatMessages');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.loginError = document.getElementById('loginError');
+            }
+
+            attachEventListeners() {
+                this.loginBtn.addEventListener('click', () => this.handleLogin());
+                this.logoutBtn.addEventListener('click', () => this.handleLogout());
+                this.sendBtn.addEventListener('click', () => this.handleSendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleSendMessage();
+                    }
+                });
+                this.passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleLogin();
+                    }
+                });
+            }
+
+            showError(message) {
+                this.loginError.textContent = message;
+                this.loginError.style.display = 'block';
+                setTimeout(() => {
+                    this.loginError.style.display = 'none';
+                }, 5000);
+            }
+
+            async handleLogin() {
+                const email = this.emailInput.value.trim();
+                const password = this.passwordInput.value;
+
+                if (!email || !password) {
+                    this.showError('Please enter both email and password');
+                    return;
+                }
+
+                this.loginBtn.disabled = true;
+                this.loginBtn.textContent = 'Signing In...';
+
+                try {
+                    await this.api.login(email, password);
+                    this.showChatInterface();
+                } catch (error) {
+                    this.showError(error.message || 'Login failed. Please check your credentials.');
+                } finally {
+                    this.loginBtn.disabled = false;
+                    this.loginBtn.textContent = 'Sign In';
+                }
+            }
+
+            handleLogout() {
+                this.api.logout();
+                this.showLoginForm();
+            }
+
+            showChatInterface() {
+                this.loginForm.style.display = 'none';
+                this.chatContainer.style.display = 'flex';
+                this.logoutBtn.style.display = 'block';
+                this.messageInput.focus();
+            }
+
+            showLoginForm() {
+                this.chatContainer.style.display = 'none';
+                this.loginForm.style.display = 'flex';
+                this.logoutBtn.style.display = 'none';
+                this.emailInput.focus();
+            }
+
+            async handleSendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.sendBtn.disabled = true;
+                this.showTypingIndicator();
+
+                try {
+                    const response = await this.api.sendMessage(message);
+                    this.hideTypingIndicator();
+                    this.addMessage(response, 'bot');
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                } finally {
+                    this.sendBtn.disabled = false;
+                }
+            }
+
+            addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = text;
+                
+                messageDiv.appendChild(contentDiv);
+                this.chatMessages.appendChild(messageDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            showTypingIndicator() {
+                this.typingIndicator.style.display = 'block';
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            hideTypingIndicator() {
+                this.typingIndicator.style.display = 'none';
+            }
+        }
+
+        // Initialize the chatbot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatbotUI();
         });
     </script>
 </body>
