@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Finda - AI Shopping Assistant</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finda - AI Shopping Assistant</title>
     <style>
         * {
             margin: 0;
@@ -352,413 +352,477 @@
     </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Connection Status -->
-    <div id="connectionStatus" class="connection-status offline">
-      🔴 Checking connection...
-    </div>
+    <div class="container">
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status offline">🔴 Checking connection...</div>
 
-    <!-- Authentication Container -->
-    <div id="authContainer" class="auth-container">
-      <div class="logo">
-        <h1>🛍️ Finda</h1>
-        <p>AI Shopping Assistant</p>
-      </div>
-      <div id="authMessage"></div>
-
-      <!-- Login Form -->
-      <div id="loginForm">
-        <div class="form-group">
-          <label for="loginEmail">Email</label>
-          <input type="email" id="loginEmail" required />
-        </div>
-        <div class="form-group">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" required />
-        </div>
-        <button type="button" id="loginBtn" class="btn">
-          <span class="btn-text">Sign In</span>
-          <span class="loading" style="display: none;"></span>
-        </button>
-        <div class="toggle-auth">
-          Don't have an account?
-          <a href="#" id="showRegister">Sign up</a>
-        </div>
-      </div>
-
-      <!-- Register Form -->
-      <div id="registerForm" style="display: none;">
-        <div class="form-group">
-          <label for="registerEmail">Email</label>
-          <input type="email" id="registerEmail" required />
-        </div>
-        <div class="form-group">
-          <label for="registerFirstName">First Name</label>
-          <input type="text" id="registerFirstName" required />
-        </div>
-        <div class="form-group">
-          <label for="registerLastName">Last Name</label>
-          <input type="text" id="registerLastName" required />
-        </div>
-        <div class="form-group">
-          <label for="registerPhone">Phone (Optional)</label>
-          <input type="tel" id="registerPhone" />
-        </div>
-        <div class="form-group">
-          <label for="registerPassword">Password</label>
-          <input type="password" id="registerPassword" required />
-        </div>
-        <div class="form-group">
-          <label for="registerPassword2">Confirm Password</label>
-          <input type="password" id="registerPassword2" required />
-        </div>
-        <button type="button" id="registerBtn" class="btn">
-          <span class="btn-text">Sign Up</span>
-          <span class="loading" style="display: none;"></span>
-        </button>
-        <div class="toggle-auth">
-          Already have an account?
-          <a href="#" id="showLogin">Sign in</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chat Container -->
-    <div id="chatContainer" class="chat-container">
-      <div class="chat-header">
-        <div>
-          <h2>🛍️ Finda Bot</h2>
-          <div class="user-info" id="userInfo"></div>
-        </div>
-        <button id="logoutBtn" class="logout-btn">Logout</button>
-      </div>
-      <div id="chatMessages" class="chat-messages">
-        <div class="message bot">
-          <div class="message-content">
-            Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
-          </div>
-        </div>
-      </div>
-      <div class="typing-indicator" id="typingIndicator">
-        Finda Bot is typing...
-      </div>
-      <div class="chat-input-container">
-        <input type="text" id="chatInput" class="chat-input" placeholder="Ask me anything about products and services!" maxlength="1000"/>
-        <button id="sendBtn" class="send-btn">Send</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ——————————————————————————————————————————————
-    // Helper to read cookies
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
-    class FindaApp {
-      constructor() {
-        this.apiBase = 'https://finda-backend.onrender.com';
-        this.token = sessionStorage.getItem('finda_token');
-        this.user = JSON.parse(sessionStorage.getItem('finda_user') || 'null');
-        this.isOnline = false;
-
-        // Prime CSRF cookie, then init
-        this.fetchCSRF().then(() => this.init());
-      }
-
-      // Ensure csrf cookie is set
-      async fetchCSRF() {
-        try {
-          await fetch(`${this.apiBase}/api/csrf/`, {
-            credentials: 'include'
-          });
-        } catch (e) {
-          console.warn('Failed to fetch CSRF:', e);
-        }
-      }
-
-      init() {
-        this.checkConnection();
-        this.bindEvents();
-
-        if (this.token && this.user) {
-          this.showChat();
-          this.updateUserInfo();
-        } else {
-          this.showAuth();
-        }
-      }
-
-      async checkConnection() {
-        const statusEl = document.getElementById('connectionStatus');
-        try {
-          await fetch(`${this.apiBase}/`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-          });
-          this.isOnline = true;
-          statusEl.className = 'connection-status online';
-          statusEl.textContent = '🟢 Connected';
-          setTimeout(() => (statusEl.style.display = 'none'), 3000);
-        } catch {
-          this.isOnline = false;
-          statusEl.className = 'connection-status offline';
-          statusEl.textContent = '🔴 Connection Failed';
-        }
-      }
-
-      bindEvents() {
-        document.getElementById('showRegister').onclick = () => this.toggleAuthForm(true);
-        document.getElementById('showLogin').onclick = () => this.toggleAuthForm(false);
-        document.getElementById('loginBtn').onclick = () => this.login();
-        document.getElementById('registerBtn').onclick = () => this.register();
-        document.getElementById('logoutBtn').onclick = () => this.logout();
-        document.getElementById('sendBtn').onclick = () => this.sendMessage();
-        document.getElementById('chatInput').onkeypress = e => e.key === 'Enter' && this.sendMessage();
-        document.getElementById('loginPassword').onkeypress = e => e.key === 'Enter' && this.login();
-        document.getElementById('registerPassword2').onkeypress = e => e.key === 'Enter' && this.register();
-      }
-
-      toggleAuthForm(showRegister) {
-        document.getElementById('loginForm').style.display = showRegister ? 'none' : 'block';
-        document.getElementById('registerForm').style.display = showRegister ? 'block' : 'none';
-        this.clearMessage();
-      }
-
-      showMessage(msg, type = 'error') {
-        document.getElementById('authMessage').innerHTML =
-          `<div class="${type}">${msg}</div>`;
-      }
-      clearMessage() {
-        document.getElementById('authMessage').innerHTML = '';
-      }
-      setLoading(btnId, loading) {
-        const btn = document.getElementById(btnId);
-        btn.querySelector('.btn-text').style.display = loading ? 'none' : 'inline';
-        btn.querySelector('.loading').style.display = loading ? 'inline-block' : 'none';
-        btn.disabled = loading;
-      }
-
-      // ————————— Login —————————
-      async login() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        if (!email || !password) {
-          return this.showMessage('Please fill in all fields');
-        }
-
-        this.setLoading('loginBtn', true);
-        this.clearMessage();
-
-        try {
-          const response = await fetch(`${this.apiBase}/api/auth/login/`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ username: email, password: password })
-          });
-          const data = await response.json();
-
-          if (response.ok) {
-            this.token = data.token;
-            this.user = { email, first_name: '', last_name: '' };
-            sessionStorage.setItem('finda_token', this.token);
-            sessionStorage.setItem('finda_user', JSON.stringify(this.user));
-            await this.fetchUserProfile();
-            this.showChat();
-            this.updateUserInfo();
-            this.showMessage('Login successful!', 'success');
-          } else {
-            this.showMessage(data.detail || 'Login failed. Please check your credentials.');
-          }
-        } catch (e) {
-          console.error(e);
-          this.showMessage('Network error. Please try again.');
-        } finally {
-          this.setLoading('loginBtn', false);
-        }
-      }
-
-      // —————— Register ——————
-      async register() {
-        const email = document.getElementById('registerEmail').value.trim();
-        const firstName = document.getElementById('registerFirstName').value.trim();
-        const lastName = document.getElementById('registerLastName').value.trim();
-        const phone = document.getElementById('registerPhone').value.trim();
-        const password = document.getElementById('registerPassword').value;
-        const password2 = document.getElementById('registerPassword2').value;
-
-        if (!email || !firstName || !lastName || !password || !password2) {
-          return this.showMessage('Please fill in all required fields');
-        }
-        if (password !== password2) {
-          return this.showMessage('Passwords do not match');
-        }
-        if (password.length < 8) {
-          return this.showMessage('Password must be at least 8 characters long');
-        }
-
-        this.setLoading('registerBtn', true);
-        this.clearMessage();
-
-        try {
-          const payload = { email, first_name: firstName, last_name: lastName, password, password2 };
-          if (phone) payload.phone = phone;
-
-          const response = await fetch(`${this.apiBase}/api/auth/register/`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify(payload)
-          });
-          const data = await response.json();
-
-          if (response.ok) {
-            this.showMessage('Registration successful! Please login.', 'success');
-            this.toggleAuthForm(false);
-            document.querySelectorAll('#registerForm input').forEach(i => i.value = '');
-          } else {
-            // Simplified error display
-            this.showMessage(Object.values(data).flat().join(' ') || 'Registration failed.');
-          }
-        } catch (e) {
-          console.error(e);
-          this.showMessage('Network error. Please try again.');
-        } finally {
-          this.setLoading('registerBtn', false);
-        }
-      }
-
-      // ————— Fetch Profile —————
-      async fetchUserProfile() {
-        try {
-          const res = await fetch(`${this.apiBase}/api/auth/profile/`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Token ${this.token}`,
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-          });
-          if (res.ok) {
-            const userData = await res.json();
-            this.user = { ...this.user, ...userData };
-            sessionStorage.setItem('finda_user', JSON.stringify(this.user));
-          }
-        } catch {}
-      }
-
-      // ————— Send Chat —————
-      async sendMessage() {
-        const input = document.getElementById('chatInput');
-        const message = input.value.trim();
-        if (!message) return;
-
-        this.addMessage(message, 'user');
-        input.value = '';
-        this.showTyping(true);
-        document.getElementById('sendBtn').disabled = true;
-
-        try {
-          const response = await fetch(`${this.apiBase}/chatbot/api/`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': getCookie('csrftoken'),
-              ...(this.token && { 'Authorization': `Token ${this.token}` })
-            },
-            body: JSON.stringify({ message, user_input: message })
-          });
-          const data = await response.json();
-          const botReply = data.reply || data.bot_response || data.response || 'Sorry, I could not process your request.';
-          this.addMessage(botReply, 'bot');
-        } catch (e) {
-          console.error(e);
-          this.addMessage('Network error. Please try again.', 'bot');
-        } finally {
-          this.showTyping(false);
-          document.getElementById('sendBtn').disabled = false;
-        }
-      }
-
-      addMessage(content, type) {
-        const messagesEl = document.getElementById('chatMessages');
-        const div = document.createElement('div');
-        div.className = `message ${type}`;
-        const box = document.createElement('div');
-        box.className = 'message-content';
-        box.innerHTML = content
-          .replace(/\n/g, '<br>')
-          .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-        div.appendChild(box);
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      }
-
-      showTyping(show) {
-        document.getElementById('typingIndicator').style.display = show ? 'block' : 'none';
-      }
-
-      updateUserInfo() {
-        const el = document.getElementById('userInfo');
-        const name = this.user.first_name || this.user.email.split('@')[0] || 'User';
-        el.textContent = `Welcome, ${name}!`;
-      }
-
-      logout() {
-        this.token = this.user = null;
-        sessionStorage.removeItem('finda_token');
-        sessionStorage.removeItem('finda_user');
-        document.getElementById('chatMessages').innerHTML = `
-          <div class="message bot">
-            <div class="message-content">
-              Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant....
+        <!-- Authentication Container -->
+        <div id="authContainer" class="auth-container">
+            <div class="logo">
+                <h1>🛍️ Finda</h1>
+                <p>AI Shopping Assistant</p>
             </div>
-          </div>`;
-        this.showAuth();
-      }
 
-      showAuth() {
-        document.getElementById('authContainer').style.display = 'block';
-        document.getElementById('chatContainer').style.display = 'none';
-      }
-      showChat() {
-        document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('chatContainer').style.display = 'flex';
-        document.getElementById('chatContainer').style.flexDirection = 'column';
-      }
-    }
+            <!-- Error/Success Messages -->
+            <div id="authMessage"></div>
 
-    // Initialize on DOM ready
-    document.addEventListener('DOMContentLoaded', () => {
-      window.findaApp = new FindaApp();
-    });
+            <!-- Login Form -->
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="button" id="loginBtn" class="btn">
+                    <span class="btn-text">Sign In</span>
+                    <span class="loading" style="display: none;"></span>
+                </button>
+                <div class="toggle-auth">
+                    Don't have an account? <a href="#" id="showRegister">Sign up</a>
+                </div>
+            </div>
 
-    // Online/offline indicators
-    window.addEventListener('online', () => {
-      const s = document.getElementById('connectionStatus');
-      s.className = 'connection-status online';
-      s.textContent = '🟢 Back Online';
-      s.style.display = 'block';
-      setTimeout(() => (s.style.display = 'none'), 3000);
-    });
-    window.addEventListener('offline', () => {
-      const s = document.getElementById('connectionStatus');
-      s.className = 'connection-status offline';
-      s.textContent = '🔴 Offline';
-      s.style.display = 'block';
-    });
-  </script>
+            <!-- Register Form -->
+            <div id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerFirstName">First Name</label>
+                    <input type="text" id="registerFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerLastName">Last Name</label>
+                    <input type="text" id="registerLastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPhone">Phone (Optional)</label>
+                    <input type="tel" id="registerPhone">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword2">Confirm Password</label>
+                    <input type="password" id="registerPassword2" required>
+                </div>
+                <button type="button" id="registerBtn" class="btn">
+                    <span class="btn-text">Sign Up</span>
+                    <span class="loading" style="display: none;"></span>
+                </button>
+                <div class="toggle-auth">
+                    Already have an account? <a href="#" id="showLogin">Sign in</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div id="chatContainer" class="chat-container">
+            <div class="chat-header">
+                <div>
+                    <h2>🛍️ Finda Bot</h2>
+                    <div class="user-info" id="userInfo"></div>
+                </div>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+            <div id="chatMessages" class="chat-messages">
+                <div class="message bot">
+                    <div class="message-content">
+                        Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
+                    </div>
+                </div>
+            </div>
+            <div class="typing-indicator" id="typingIndicator">Finda Bot is typing...</div>
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask me anything about products and services!" maxlength="1000">
+                <button id="sendBtn" class="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper to read cookies
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        class FindaApp {
+            constructor() {
+                this.apiBase = 'https://finda-backend.onrender.com';
+                this.token = sessionStorage.getItem('finda_token');
+                this.user = JSON.parse(sessionStorage.getItem('finda_user') || 'null');
+                this.isOnline = false;
+                this.init();  // no change here
+            }
+
+            // Make init async so we can await CSRF fetch
+            async init() {
+                await this.checkConnection();
+                // Ensure CSRF cookie is set
+                await this.fetchCSRF();
+                this.bindEvents();
+
+                if (this.token && this.user) {
+                    this.showChat();
+                    this.updateUserInfo();
+                } else {
+                    this.showAuth();
+                }
+            }
+
+            // GET /api/csrf/ to set the csrftoken cookie
+            async fetchCSRF() {
+                try {
+                    await fetch(`${this.apiBase}/api/csrf/`, {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+                } catch (e) {
+                    console.warn('Could not fetch CSRF token', e);
+                }
+            }
+
+            async checkConnection() {
+                const statusEl = document.getElementById('connectionStatus');
+                try {
+                    const response = await fetch(`${this.apiBase}/`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    this.isOnline = true;
+                    statusEl.className = 'connection-status online';
+                    statusEl.textContent = '🟢 Connected';
+                    setTimeout(() => statusEl.style.display = 'none', 3000);
+                } catch (error) {
+                    this.isOnline = false;
+                    statusEl.className = 'connection-status offline';
+                    statusEl.textContent = '🔴 Connection Failed';
+                    console.error('Connection check failed:', error);
+                }
+            }
+
+            bindEvents() {
+                document.getElementById('showRegister').onclick = () => this.toggleAuthForm(true);
+                document.getElementById('showLogin').onclick = () => this.toggleAuthForm(false);
+                document.getElementById('loginBtn').onclick = () => this.login();
+                document.getElementById('registerBtn').onclick = () => this.register();
+                document.getElementById('logoutBtn').onclick = () => this.logout();
+                document.getElementById('sendBtn').onclick = () => this.sendMessage();
+                document.getElementById('chatInput').onkeypress = (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                };
+                document.getElementById('loginPassword').onkeypress = (e) => {
+                    if (e.key === 'Enter') this.login();
+                };
+                document.getElementById('registerPassword2').onkeypress = (e) => {
+                    if (e.key === 'Enter') this.register();
+                };
+            }
+
+            toggleAuthForm(showRegister) {
+                const loginForm    = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+                if (showRegister) {
+                    loginForm.style.display    = 'none';
+                    registerForm.style.display = 'block';
+                } else {
+                    registerForm.style.display = 'none';
+                    loginForm.style.display    = 'block';
+                }
+                this.clearMessage();
+            }
+
+            showMessage(message, type = 'error') {
+                document.getElementById('authMessage').innerHTML =
+                    `<div class="${type}">${message}</div>`;
+            }
+
+            clearMessage() {
+                document.getElementById('authMessage').innerHTML = '';
+            }
+
+            setLoading(btnId, loading) {
+                const btn    = document.getElementById(btnId);
+                const text   = btn.querySelector('.btn-text');
+                const loader = btn.querySelector('.loading');
+                if (loading) {
+                    text.style.display   = 'none';
+                    loader.style.display = 'inline-block';
+                    btn.disabled         = true;
+                } else {
+                    text.style.display   = 'inline';
+                    loader.style.display = 'none';
+                    btn.disabled         = false;
+                }
+            }
+
+            async login() {
+                const email    = document.getElementById('loginEmail').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                if (!email || !password) {
+                    this.showMessage('Please fill in all fields');
+                    return;
+                }
+
+                this.setLoading('loginBtn', true);
+                this.clearMessage();
+
+                try {
+                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
+                        method: 'POST',
+                        credentials: 'include',              // ← include cookies
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')  // ← send CSRF token
+                        },
+                        body: JSON.stringify({
+                            username: email,
+                            password: password
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        this.token = data.token;
+                        this.user  = { email, first_name: '', last_name: '' };
+                        sessionStorage.setItem('finda_token', this.token);
+                        sessionStorage.setItem('finda_user', JSON.stringify(this.user));
+                        await this.fetchUserProfile();
+                        this.showChat();
+                        this.updateUserInfo();
+                        this.showMessage('Login successful!', 'success');
+                    } else {
+                        let errorMsg = 'Login failed. Please check your credentials.';
+                        if (data.detail)                 errorMsg = data.detail;
+                        else if (data.non_field_errors)  errorMsg = data.non_field_errors[0];
+                        else if (data.error)             errorMsg = data.error;
+                        this.showMessage(errorMsg);
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.showMessage('Network error. Please check your connection and try again.');
+                } finally {
+                    this.setLoading('loginBtn', false);
+                }
+            }
+
+            async fetchUserProfile() {
+                try {
+                    const response = await fetch(`${this.apiBase}/api/auth/profile/`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Authorization': `Token ${this.token}`,
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    if (response.ok) {
+                        const userData = await response.json();
+                        this.user = { ...this.user, ...userData };
+                        sessionStorage.setItem('finda_user', JSON.stringify(this.user));
+                    }
+                } catch (error) {
+                    console.log('Could not fetch user profile:', error);
+                }
+            }
+
+            async register() {
+                const email      = document.getElementById('registerEmail').value.trim();
+                const firstName  = document.getElementById('registerFirstName').value.trim();
+                const lastName   = document.getElementById('registerLastName').value.trim();
+                const phone      = document.getElementById('registerPhone').value.trim();
+                const password   = document.getElementById('registerPassword').value;
+                const password2  = document.getElementById('registerPassword2').value;
+
+                if (!email || !firstName || !lastName || !password || !password2) {
+                    this.showMessage('Please fill in all required fields');
+                    return;
+                }
+                if (password !== password2) {
+                    this.showMessage('Passwords do not match');
+                    return;
+                }
+                if (password.length < 8) {
+                    this.showMessage('Password must be at least 8 characters long');
+                    return;
+                }
+
+                this.setLoading('registerBtn', true);
+                this.clearMessage();
+
+                try {
+                    const registrationData = {
+                        email,
+                        first_name: firstName,
+                        last_name: lastName,
+                        password,
+                        password2
+                    };
+                    if (phone) registrationData.phone = phone;
+
+                    const response = await fetch(`${this.apiBase}/api/auth/register/`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify(registrationData)
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.showMessage('Registration successful! Please login.', 'success');
+                        this.toggleAuthForm(false);
+                        document.getElementById('registerForm')
+                                .querySelectorAll('input').forEach(i => i.value = '');
+                    } else {
+                        let errorMsg = 'Registration failed: ';
+                        if (data.email)           errorMsg += `Email: ${data.email[0] || data.email} `;
+                        if (data.phone)           errorMsg += `Phone: ${data.phone[0] || data.phone} `;
+                        if (data.password)        errorMsg += `Password: ${data.password[0] || data.password} `;
+                        if (data.password2)       errorMsg += `Confirm Password: ${data.password2[0] || data.password2} `;
+                        if (data.first_name)      errorMsg += `First Name: ${data.first_name[0] || data.first_name} `;
+                        if (data.last_name)       errorMsg += `Last Name: ${data.last_name[0] || data.last_name} `;
+                        if (data.non_field_errors)errorMsg += data.non_field_errors[0];
+                        if (data.detail)          errorMsg += data.detail;
+                        this.showMessage(errorMsg);
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    this.showMessage('Network error. Please check your connection and try again.');
+                } finally {
+                    this.setLoading('registerBtn', false);
+                }
+            }
+
+            updateUserInfo() {
+                const userInfoEl = document.getElementById('userInfo');
+                if (this.user) {
+                    const displayName = this.user.first_name
+                        || this.user.email.split('@')[0]
+                        || 'User';
+                    userInfoEl.textContent = `Welcome, ${displayName}!`;
+                }
+            }
+
+            logout() {
+                this.token = null;
+                this.user  = null;
+                sessionStorage.removeItem('finda_token');
+                sessionStorage.removeItem('finda_user');
+                document.getElementById('chatMessages').innerHTML = `
+                    <div class="message bot">
+                        <div class="message-content">
+                            Hello! Welcome to Finda! 🛍️ I'm your AI shopping assistant. You can ask me about products, services, or anything you're looking for. How can I help you today?
+                        </div>
+                    </div>`;
+                this.showAuth();
+            }
+
+            showAuth() {
+                document.getElementById('authContainer').style.display = 'block';
+                document.getElementById('chatContainer').style.display = 'none';
+            }
+
+            showChat() {
+                document.getElementById('authContainer').style.display = 'none';
+                const chatC = document.getElementById('chatContainer');
+                chatC.style.display = 'flex';
+                chatC.style.flexDirection = 'column';
+            }
+
+            async sendMessage() {
+                const input   = document.getElementById('chatInput');
+                const message = input.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'user');
+                input.value = '';
+                this.showTyping(true);
+                document.getElementById('sendBtn').disabled = true;
+
+                try {
+                    const response = await fetch(`${this.apiBase}/chatbot/api/`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': this.token ? `Token ${this.token}` : ''
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            user_input: message
+                        })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        const botReply = data.reply || data.bot_response || data.response || 'Sorry, I could not process your request.';
+                        this.addMessage(botReply, 'bot');
+                    } else {
+                        console.error('Chat API error:', data);
+                        this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                    }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    this.addMessage('Network error. Please check your connection and try again. 🔴', 'bot');
+                } finally {
+                    this.showTyping(false);
+                    document.getElementById('sendBtn').disabled = false;
+                    input.focus();
+                }
+            }
+
+            addMessage(content, type) {
+                const messagesEl = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                const formatted = content
+                    .replace(/\n/g, '<br>')
+                    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: inherit; text-decoration: underline;">$1</a>');
+                contentDiv.innerHTML = formatted;
+                messageDiv.appendChild(contentDiv);
+                messagesEl.appendChild(messageDiv);
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+
+            showTyping(show) {
+                const el = document.getElementById('typingIndicator');
+                el.style.display = show ? 'block' : 'none';
+                if (show) {
+                    const m = document.getElementById('chatMessages');
+                    m.scrollTop = m.scrollHeight;
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.findaApp = new FindaApp();
+        });
+
+        window.addEventListener('online', () => {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'connection-status online';
+            statusEl.textContent = '🟢 Back Online';
+            statusEl.style.display = 'block';
+            setTimeout(() => statusEl.style.display = 'none', 3000);
+        });
+        window.addEventListener('offline', () => {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'connection-status offline';
+            statusEl.textContent = '🔴 Offline';
+            statusEl.style.display = 'block';
+        });
+    </script>
 </body>
 </html>
