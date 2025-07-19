@@ -628,7 +628,7 @@
             async fetchUserProfile() {
                 // Try to get user profile if your backend has a profile endpoint
                 try {
-                    const response = await fetch(`${this.apiBase}/users/profile/`, {
+                    const response = await fetch(`${this.apiBase}/api/auth/profile/`, {
                         method: 'GET',
                         headers: {
                             'Authorization': `Token ${this.token}`,
@@ -689,7 +689,7 @@
 
                     // You need to create a registration endpoint in your Django backend
                     // For now, let's assume it follows a standard pattern
-                    const response = await fetch(`${this.apiBase}/users/register/`, {
+                    const response = await fetch(`${this.apiBase}/api/auth/register/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
