@@ -392,16 +392,16 @@
                     <input type="email" id="registerEmail" required>
                 </div>
                 <div class="form-group">
-                    <label for="registerUsername">Username</label>
-                    <input type="text" id="registerUsername" required>
-                </div>
-                <div class="form-group">
                     <label for="registerFirstName">First Name</label>
                     <input type="text" id="registerFirstName" required>
                 </div>
                 <div class="form-group">
                     <label for="registerLastName">Last Name</label>
                     <input type="text" id="registerLastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPhone">Phone (Optional)</label>
+                    <input type="tel" id="registerPhone">
                 </div>
                 <div class="form-group">
                     <label for="registerPassword">Password</label>
@@ -449,7 +449,7 @@
         class FindaApp {
             constructor() {
                 this.apiBase = 'https://finda-backend.onrender.com';
-                this.token = sessionStorage.getItem('finda_token'); // Changed to sessionStorage
+                this.token = sessionStorage.getItem('finda_token');
                 this.user = JSON.parse(sessionStorage.getItem('finda_user') || 'null');
                 this.isOnline = false;
                 
@@ -572,13 +572,13 @@
                 this.clearMessage();
                 
                 try {
-                    const response = await fetch(`${this.apiBase}/api/auth/login/`, {
+                    const response = await fetch(`${this.apiBase}/users/api/login/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            username: email, // API expects username field but we're sending email
+                            email: email,
                             password: password
                         })
                     });
@@ -587,16 +587,12 @@
                     
                     if (response.ok) {
                         this.token = data.token;
-                        
-                        // Store user info from login response if available
                         this.user = data.user || {
                             email: email,
-                            username: email.split('@')[0],
                             first_name: '',
                             last_name: ''
                         };
                         
-                        // Store in sessionStorage
                         sessionStorage.setItem('finda_token', this.token);
                         sessionStorage.setItem('finda_user', JSON.stringify(this.user));
                         
@@ -616,14 +612,14 @@
 
             async register() {
                 const email = document.getElementById('registerEmail').value.trim();
-                const username = document.getElementById('registerUsername').value.trim();
                 const firstName = document.getElementById('registerFirstName').value.trim();
                 const lastName = document.getElementById('registerLastName').value.trim();
+                const phone = document.getElementById('registerPhone').value.trim();
                 const password = document.getElementById('registerPassword').value;
                 const password2 = document.getElementById('registerPassword2').value;
                 
-                if (!email || !username || !firstName || !lastName || !password || !password2) {
-                    this.showMessage('Please fill in all fields');
+                if (!email || !firstName || !lastName || !password || !password2) {
+                    this.showMessage('Please fill in all required fields');
                     return;
                 }
 
@@ -641,18 +637,25 @@
                 this.clearMessage();
                 
                 try {
-                    const response = await fetch(`${this.apiBase}/api/auth/register/`, {
+                    const registrationData = {
+                        email: email,
+                        first_name: firstName,
+                        last_name: lastName,
+                        password: password,
+                        password2: password2
+                    };
+
+                    // Only add phone if it's provided
+                    if (phone) {
+                        registrationData.phone = phone;
+                    }
+
+                    const response = await fetch(`${this.apiBase}/users/api/register/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            email: email,
-                            username: username,
-                            first_name: firstName,
-                            last_name: lastName,
-                            password: password
-                        })
+                        body: JSON.stringify(registrationData)
                     });
                     
                     const data = await response.json();
@@ -663,12 +666,35 @@
                         // Clear form
                         document.getElementById('registerForm').querySelectorAll('input').forEach(input => input.value = '');
                     } else {
-                        let errorMsg = 'Registration failed. ';
-                        if (data.email) errorMsg += data.email[0] + ' ';
-                        if (data.username) errorMsg += data.username[0] + ' ';
-                        if (data.password) errorMsg += data.password[0] + ' ';
-                        if (data.non_field_errors) errorMsg += data.non_field_errors[0] + ' ';
-                        this.showMessage(errorMsg || data.detail);
+                        let errorMsg = 'Registration failed: ';
+                        
+                        // Handle specific field errors
+                        if (data.email) {
+                            errorMsg += `Email: ${data.email[0]} `;
+                        }
+                        if (data.phone) {
+                            errorMsg += `Phone: ${data.phone[0]} `;
+                        }
+                        if (data.password) {
+                            errorMsg += `Password: ${data.password[0]} `;
+                        }
+                        if (data.password2) {
+                            errorMsg += `Confirm Password: ${data.password2[0]} `;
+                        }
+                        if (data.first_name) {
+                            errorMsg += `First Name: ${data.first_name[0]} `;
+                        }
+                        if (data.last_name) {
+                            errorMsg += `Last Name: ${data.last_name[0]} `;
+                        }
+                        if (data.non_field_errors) {
+                            errorMsg += data.non_field_errors[0];
+                        }
+                        if (data.detail) {
+                            errorMsg += data.detail;
+                        }
+                        
+                        this.showMessage(errorMsg);
                     }
                 } catch (error) {
                     console.error('Registration error:', error);
@@ -681,7 +707,7 @@
             updateUserInfo() {
                 const userInfoEl = document.getElementById('userInfo');
                 if (this.user) {
-                    const displayName = this.user.first_name || this.user.username || this.user.email;
+                    const displayName = this.user.first_name || this.user.email?.split('@')[0] || 'User';
                     userInfoEl.textContent = `Welcome, ${displayName}!`;
                 }
             }
@@ -689,7 +715,7 @@
             logout() {
                 // Make logout API call if token exists
                 if (this.token) {
-                    fetch(`${this.apiBase}/users/logout/`, {
+                    fetch(`${this.apiBase}/users/api/logout/`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Token ${this.token}`,
