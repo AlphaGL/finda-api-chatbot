@@ -476,7 +476,7 @@
                         try {
                             console.log(`Trying message pattern ${i + 1} with auth header ${j + 1}:`, messagePatterns[i]);
                             
-                            const response = await fetch(`${this.baseURL}/chatbot/api/`, {
+                            const response = await fetch(`${this.baseURL}/chatbot/api/chat/`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
